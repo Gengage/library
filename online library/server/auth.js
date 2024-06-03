@@ -17,23 +17,23 @@ const generateToken = (user) => { // 토큰 생성
   })
 }
 
-const isAuth = (req, res, next) => { // 권한확인
-    const bearerToken = req.headers.authorization // 요청헤더에 저장된 토큰
-    if(!bearerToken){
-      res.status(401).json({message: 'Token is not supplied'}) // 헤더에 토근이 없는 경우
-    }else{
-      const token = bearerToken.slice(7, bearerToken.length) // Bearer 글자는 제거하고 jwt 토큰만 추출
+const isAuth = (req, res, next) => { // 사용자 권한 검증하는 미들웨어 
+  const bearerToken = req.headers.authorization // 요청헤더의 Authorization 속성
+  if(!bearerToken){
+      return res.status(401).json({ message: 'Token is not supplied' }) // return 추가
+  }else{
+      const token = bearerToken.slice(7, bearerToken.length) // Bearer 글자 제거하고 토큰만 추출
       jwt.verify(token, config.JWT_SECRET, (err, userInfo) => {
-        if(err && err.name === 'TokenExpiredError'){ // 토큰만료
-          return res.status(419).json({ code: 419, message: 'token expired !'})
-        }else if(err){
-          return res.status(401).json({ code: 401, message: 'Invalid Token !'})
-        }
-        req.user = userInfo
-        next()
+          if(err && err.name === 'TokenExpiredError'){
+              return res.status(419).json({ code: 419, message: 'token expired!' })
+          }else if(err){
+              return res.status(401).json({ code: 401, message: 'Invalid Token' }) // 토큰이 위변조가 되어서 복호화를 할수 없는 경우
+          }
+          req.user = userInfo
+          next() // 권한이 있는 사용자의 서비스 허용 
       })
-    }
   }
+}
 
   const isAdmin = (req, res, next) => { // 관리자 확인
     if(req.user && req.user.isAdmin){
